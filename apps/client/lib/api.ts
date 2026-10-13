@@ -64,15 +64,60 @@ export function clearConversationCache() {
   conversationRequest = null;
 }
 
-export function sendMessage(
+export type SentMessage = { userMessage: Message; assistantMessage: Message };
+
+export async function sendMessage(
   conversationId: string,
   content: string,
   idempotencyKey: string,
-) {
-  return apiFetch<{ userMessage: Message; assistantMessage: Message }>(
-    `/conversations/${conversationId}/messages`,
-    { method: "POST", body: JSON.stringify({ content, idempotencyKey }) },
+  onDelta: (text: string) => void,
+): Promise<SentMessage> {
+  const response = await fetch(
+    `${API_URL}/conversations/${conversationId}/messages`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+      },
+      body: JSON.stringify({ content, idempotencyKey }),
+    },
   );
+  if (!response.ok || !response.body) {
+    const body = await response.json().catch(() => null);
+    throw new ApiError(
+      response.status,
+      body?.error ?? `Request failed with status ${response.status}`,
+    );
+  }
+
+  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += value;
+    let boundary: number;
+    while ((boundary = buffer.indexOf("\n\n")) !== -1) {
+      const event = parseEvent(buffer.slice(0, boundary));
+      buffer = buffer.slice(boundary + 2);
+      if (event.name === "delta") onDelta(event.data.text);
+      if (event.name === "done") return event.data;
+      if (event.name === "error") throw new ApiError(502, event.data.error);
+    }
+  }
+  throw new ApiError(502, "The connection closed before the reply finished");
+}
+
+function parseEvent(block: string) {
+  let name = "message";
+  let data = "";
+  for (const line of block.split("\n")) {
+    if (line.startsWith("event: ")) name = line.slice(7);
+    else if (line.startsWith("data: ")) data += line.slice(6);
+  }
+  return { name, data: JSON.parse(data) };
 }
 
 export function listMessages(conversationId: string) {

@@ -6,9 +6,11 @@ import { Chat } from "./chat";
 import styles from "./page.module.css";
 
 export default function Home() {
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending, isRefetching } = authClient.useSession();
 
-  if (isPending) {
+  // Better Auth reports isPending on every refetch while signed out; showing
+  // the loader then would unmount the form and wipe what the user typed.
+  if (isPending && !isRefetching) {
     return (
       <main className={styles.center}>
         <p className={styles.muted}>Loading…</p>

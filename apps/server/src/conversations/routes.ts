@@ -48,11 +48,51 @@ conversationsRouter.get("/:id/messages", async (req, res) => {
 
 conversationsRouter.post("/:id/messages", async (req, res) => {
   const body = sendMessageSchema.parse(req.body);
-  const result = await sendMessage({
+  const input = {
     conversationId: parseConversationId(req.params.id),
     userId: res.locals.user.id,
     content: body.content,
     idempotencyKey: body.idempotencyKey,
-  });
-  res.status(201).json(result);
+  };
+
+  if (!req.get("accept")?.includes("text/event-stream")) {
+    res.status(201).json(await sendMessage(input));
+    return;
+  }
+
+  // Headers go out with the first event, so validation, ownership and
+  // idempotency errors still return a normal JSON error status.
+  const send = (event: string, data: unknown) => {
+    if (res.destroyed || res.writableEnded) return;
+    if (!res.headersSent) {
+      res.status(200).set({
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
+      });
+      res.flushHeaders();
+    }
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  };
+
+  try {
+    const result = await sendMessage({
+      ...input,
+      onDelta: (text) => send("delta", { text }),
+    });
+    send("done", result);
+  } catch (error) {
+    if (!res.headersSent) throw error;
+    if (!(error instanceof HttpError) || error.status >= 500) {
+      console.error(
+        error instanceof HttpError ? (error.cause ?? error) : error,
+      );
+    }
+    send("error", {
+      error:
+        error instanceof HttpError ? error.message : "Internal server error",
+    });
+  }
+  res.end();
 });

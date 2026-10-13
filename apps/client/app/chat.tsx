@@ -22,7 +22,7 @@ type ChatMessage = {
   key: string;
   role: "user" | "assistant";
   content: string;
-  status: "sent" | "sending" | "failed";
+  status: "sent" | "sending" | "streaming" | "failed";
 };
 
 function fromServer(message: Message): ChatMessage {
@@ -84,11 +84,14 @@ export function Chat({ userName }: { userName: string }) {
     };
   }, []);
 
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
   const waiting = messages.some((m) => m.status === "sending");
+  const streaming = messages.some((m) => m.status === "streaming");
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({
+      behavior: streaming ? "instant" : "smooth",
+    });
+  }, [messages, streaming]);
 
   async function deliver(content: string, idempotencyKey: string) {
     if (!conversationId) return;
@@ -98,17 +101,42 @@ export function Chat({ userName }: { userName: string }) {
       content,
       status: "sending",
     };
+    const replyKey = `${idempotencyKey}:reply`;
+    const isDraft = (m: ChatMessage) =>
+      m.key === idempotencyKey || m.key === replyKey;
+    let reply = "";
+
     setSendError(null);
     setMessages((prev) => upsert(prev, pending));
     try {
-      const result = await sendMessage(conversationId, content, idempotencyKey);
+      const result = await sendMessage(
+        conversationId,
+        content,
+        idempotencyKey,
+        (text) => {
+          reply += text;
+          setMessages((prev) =>
+            upsert(prev, {
+              key: replyKey,
+              role: "assistant",
+              content: reply,
+              status: "streaming",
+            }),
+          );
+        },
+      );
       setMessages((prev) => [
-        ...prev.filter((m) => m.key !== idempotencyKey),
+        ...prev.filter((m) => !isDraft(m)),
         fromServer(result.userMessage),
         fromServer(result.assistantMessage),
       ]);
     } catch (error) {
-      setMessages((prev) => upsert(prev, { ...pending, status: "failed" }));
+      setMessages((prev) =>
+        upsert(
+          prev.filter((m) => m.key !== replyKey),
+          { ...pending, status: "failed" },
+        ),
+      );
       setSendError(errorMessage(error));
     }
   }
@@ -183,7 +211,7 @@ export function Chat({ userName }: { userName: string }) {
             )}
           </div>
         ))}
-        {waiting && <p className={styles.muted}>Thinking…</p>}
+        {waiting && !streaming && <p className={styles.muted}>Thinking…</p>}
         <div ref={endRef} />
       </section>
 

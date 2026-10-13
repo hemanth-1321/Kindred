@@ -67,8 +67,9 @@ export async function sendMessage(input: {
   userId: string;
   content: string;
   idempotencyKey: string;
+  onDelta?: (text: string) => void;
 }) {
-  const { conversationId, userId, content, idempotencyKey } = input;
+  const { conversationId, userId, content, idempotencyKey, onDelta } = input;
 
   const userMessage = await db.transaction(async (tx) => {
     await requireOwnedConversation(tx, conversationId, userId, {
@@ -109,6 +110,8 @@ export async function sendMessage(input: {
     return { userMessage, assistantMessage: existingReply };
   }
 
+  // A concurrent retry joins the in-flight reply without its deltas and gets
+  // the full message once it is stored.
   const inFlightKey = `${conversationId}:${replyKey}`;
   let pending = repliesInFlight.get(inFlightKey);
   if (!pending) {
@@ -117,6 +120,7 @@ export async function sendMessage(input: {
       userId,
       replyKey,
       upToSequence: userMessage.sequence,
+      onDelta,
     }).finally(() => repliesInFlight.delete(inFlightKey));
     repliesInFlight.set(inFlightKey, pending);
   }
@@ -129,8 +133,9 @@ async function produceReply(input: {
   userId: string;
   replyKey: string;
   upToSequence: number;
+  onDelta?: (text: string) => void;
 }): Promise<Message> {
-  const { conversationId, userId, replyKey, upToSequence } = input;
+  const { conversationId, userId, replyKey, upToSequence, onDelta } = input;
 
   const history = await db
     .select({
@@ -159,6 +164,7 @@ async function produceReply(input: {
           role: turn.role as "user" | "assistant",
           content: turn.content,
         })),
+      { onDelta },
     );
   } catch (error) {
     if (error instanceof HttpError) throw error;
