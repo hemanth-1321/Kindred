@@ -1,0 +1,29 @@
+{
+  "name": "worker",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "test": "echo 'Add test script here'",
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@repo/db": "workspace:*",
+    "@repo/llm": "workspace:*",
+    "@repo/matching": "workspace:*",
+    "bullmq": "^6.3.13",
+    "ioredis": "^6.0.0"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "26.4.1",
+    "eslint": "10.9.1",
+    "tsx": "^4.23.15",
+    "typescript": "7.0.2"
+  },
+  "type": "module"
+}
