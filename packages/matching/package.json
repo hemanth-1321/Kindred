@@ -3,10 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "echo 'Add dev script here'",
+    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
     "build": "tsc -p tsconfig.json",
-    "test": "echo 'Add test script here'",
-    "lint": "echo 'Add lint script here'",
     "check-types": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

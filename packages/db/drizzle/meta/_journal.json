@@ -22,6 +22,13 @@
       "when": 1791907676512,
       "tag": "0002_full_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791908600201,
+      "tag": "0003_slimy_steel_serpent",
+      "breakpoints": true
     }
   ]
 }
