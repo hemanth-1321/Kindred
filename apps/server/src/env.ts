@@ -12,4 +12,6 @@ export const env = {
   betterAuthSecret: required("BETTER_AUTH_SECRET"),
   betterAuthUrl: required("BETTER_AUTH_URL"),
   clientOrigin: process.env.CLIENT_ORIGIN ?? "http://localhost:3000",
+  openaiApiKey: process.env.OPENAI_API_KEY || undefined,
+  openaiChatModel: process.env.OPENAI_CHAT_MODEL ?? "gpt-5.4-mini",
 };

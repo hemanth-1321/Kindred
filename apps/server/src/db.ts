@@ -1,4 +1,4 @@
-import { createDb, type Db } from "@repo/db";
+import { createDb } from "@repo/db";
 import { env } from "./env.js";
 
-export const db: Db = createDb(env.databaseUrl);
+export const db = createDb(env.databaseUrl);
