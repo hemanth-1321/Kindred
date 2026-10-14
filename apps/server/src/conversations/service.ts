@@ -1,6 +1,10 @@
 import {
   conversationMessages,
   conversations,
+  outbox,
+  PROFILE_EXTRACT_DELAY_MS,
+  PROFILE_EXTRACT_TOPIC,
+  type ProfileExtractPayload,
   usageEvents,
   type Db,
 } from "@repo/db";
@@ -101,6 +105,17 @@ export async function sendMessage(input: {
       .update(conversations)
       .set({ version: sql`${conversations.version} + 1` })
       .where(eq(conversations.id, conversationId));
+    const payload: ProfileExtractPayload = {
+      conversationId,
+      userId,
+      sequence: inserted!.sequence,
+    };
+    await tx.insert(outbox).values({
+      topic: PROFILE_EXTRACT_TOPIC,
+      jobKey: `${PROFILE_EXTRACT_TOPIC}:${inserted!.id}`,
+      payload,
+      availableAt: new Date(Date.now() + PROFILE_EXTRACT_DELAY_MS),
+    });
     return inserted!;
   });
 

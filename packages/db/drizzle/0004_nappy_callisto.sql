@@ -1,0 +1,2 @@
+ALTER TABLE "conversations" ADD COLUMN "profile_extracted_through" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "conversations" ADD COLUMN "pending_questions" text[] DEFAULT '{}' NOT NULL;

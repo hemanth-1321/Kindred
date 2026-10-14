@@ -62,6 +62,7 @@
         "@repo/llm": "workspace:*",
         "@repo/matching": "workspace:*",
         "bullmq": "^6.3.13",
+        "drizzle-orm": "^0.45.4",
         "ioredis": "^6.0.0",
       },
       "devDependencies": {
@@ -120,6 +121,9 @@
     "packages/matching": {
       "name": "@repo/matching",
       "version": "0.0.0",
+      "dependencies": {
+        "zod": "^4.6.6",
+      },
       "devDependencies": {
         "@repo/typescript-config": "workspace:*",
         "@types/node": "26.4.1",

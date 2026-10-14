@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --env-file-if-exists=../../.env src/index.ts",
+    "eval:extraction": "tsx --env-file-if-exists=../../.env src/evals/profile-extraction.ts",
     "build": "tsc -p tsconfig.json",
     "test": "echo 'Add test script here'",
     "lint": "eslint . --max-warnings 0",
@@ -15,6 +16,7 @@
     "@repo/llm": "workspace:*",
     "@repo/matching": "workspace:*",
     "bullmq": "^6.3.13",
+    "drizzle-orm": "^0.45.4",
     "ioredis": "^6.0.0"
   },
   "devDependencies": {

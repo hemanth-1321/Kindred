@@ -21,6 +21,13 @@ export const conversations = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     version: integer("version").notNull().default(0),
+    profileExtractedThrough: integer("profile_extracted_through")
+      .notNull()
+      .default(0),
+    pendingQuestions: text("pending_questions")
+      .array()
+      .notNull()
+      .default(sql`'{}'`),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

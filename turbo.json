@@ -23,6 +23,7 @@
         "DATABASE_URL",
         "REDIS_URL",
         "OPENAI_*",
+        "EXTRACTION_*",
         "BETTER_AUTH_*",
         "CLIENT_ORIGIN",
         "NEXT_PUBLIC_*"
